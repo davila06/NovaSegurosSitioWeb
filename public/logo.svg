@@ -1,0 +1,99 @@
+<svg viewBox="0 0 520 590" xmlns="http://www.w3.org/2000/svg" width="520" height="590">
+  <defs>
+    <linearGradient id="shieldFill" x1="0" y1="0" x2="0.15" y2="1">
+      <stop offset="0%" stop-color="#F5F0E6"/>
+      <stop offset="100%" stop-color="#E8E0CC"/>
+    </linearGradient>
+    <linearGradient id="goldBarGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#E8CE74"/>
+      <stop offset="30%" stop-color="#CFA843"/>
+      <stop offset="70%" stop-color="#B88E28"/>
+      <stop offset="100%" stop-color="#9A7418"/>
+    </linearGradient>
+    <linearGradient id="swooshGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#9A7418" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#CFA843"/>
+      <stop offset="75%" stop-color="#CFA843"/>
+      <stop offset="100%" stop-color="#9A7418" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="goldTextGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#D4AC46"/>
+      <stop offset="100%" stop-color="#A07820"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ── SHIELD BODY: cream so it pops on dark navy background ── -->
+  <path d="M260 16
+    C 310 16 365 28 410 52
+    L 445 72
+    L 445 235
+    C 445 295 428 345 400 385
+    C 372 425 335 450 295 465
+    L 260 478
+    L 225 465
+    C 185 450 148 425 120 385
+    C 92 345 75 295 75 235
+    L 75 72
+    L 110 52
+    C 155 28 210 16 260 16 Z"
+    fill="url(#shieldFill)"/>
+
+  <!-- ── INNER BORDER: navy stroke — double-border on cream shield ── -->
+  <path d="M260 40
+    C 306 40 356 51 398 73
+    L 422 89
+    L 422 235
+    C 422 290 407 336 381 372
+    C 356 408 321 430 285 444
+    L 260 454
+    L 235 444
+    C 199 430 164 408 139 372
+    C 113 336 98 290 98 235
+    L 98 89
+    L 122 73
+    C 164 51 214 40 260 40 Z"
+    fill="none" stroke="#1B3272" stroke-width="3"/>
+
+  <!-- ── N LETTER — navy on cream, clearly visible ── -->
+  <!-- Left vertical bar -->
+  <rect x="126" y="105" width="52" height="262" rx="1" fill="#1B3272"/>
+  <!-- Right vertical bar -->
+  <rect x="342" y="105" width="52" height="262" rx="1" fill="#1B3272"/>
+  <!-- Diagonal -->
+  <polygon points="126,105 178,105 394,367 342,367" fill="#1B3272"/>
+
+  <!-- ── GOLD VERTICAL PILLAR ── -->
+  <rect x="234" y="88" width="52" height="296" rx="1" fill="url(#goldBarGrad)"/>
+
+  <!-- ── GOLD SWOOSH ARC ── -->
+  <path d="M 86 456 Q 260 480 434 456"
+    fill="none"
+    stroke="url(#swooshGrad)"
+    stroke-width="7"
+    stroke-linecap="round"/>
+
+  <!-- ── BRAND NAME: NOVA — white so it’s visible on dark bg ── -->
+  <text
+    x="260"
+    y="536"
+    text-anchor="middle"
+    font-family="Arial Black, Arial, sans-serif"
+    font-weight="900"
+    font-size="62"
+    letter-spacing="8">
+    <tspan fill="#FFFFFF">NOVA </tspan><tspan fill="url(#goldTextGrad)">SEGUROS</tspan>
+  </text>
+
+  <!-- ── TAGLINE ── -->
+  <line x1="88" y1="557" x2="116" y2="557" stroke="#CFA843" stroke-width="1.8"/>
+  <text
+    x="260"
+    y="562"
+    text-anchor="middle"
+    font-family="Arial, sans-serif"
+    font-weight="400"
+    font-size="12"
+    letter-spacing="4"
+    fill="#AAAAAA">PROTEGEMOS LO QUE MÁS VALORAS</text>
+  <line x1="404" y1="557" x2="432" y2="557" stroke="#CFA843" stroke-width="1.8"/>
+</svg>
