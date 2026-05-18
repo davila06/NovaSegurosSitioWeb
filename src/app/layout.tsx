@@ -22,10 +22,11 @@ export const metadata: Metadata = {
   keywords: ["seguros", "insurance", "Costa Rica", "NovaSeguros", "seguros auto", "seguros médicos", "seguros empresas"],
   icons: {
     icon: [
-      { url: "/logo-icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico",    sizes: "32x32",    type: "image/x-icon" },
+      { url: "/icon.png",       sizes: "512x512",  type: "image/png"    },
     ],
-    shortcut: "/logo-icon.svg",
-    apple: "/logo-icon.svg",
+    shortcut: "/favicon.ico",
+    apple:    [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
   },
   openGraph: {
     title: "NovaSeguros — Protección Premium en Costa Rica",
@@ -51,7 +52,7 @@ const jsonLd = {
   url: "https://novaseguros.cr",
   telephone: "+50621000000",
   email: "hola@novaseguros.cr",
-  logo: "https://novaseguros.cr/logo-oficial.png",
+  logo: "https://novaseguros.cr/imagenOficial.png",
   address: {
     "@type": "PostalAddress",
     addressLocality: "San José",

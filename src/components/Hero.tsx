@@ -117,7 +117,7 @@ export default function Hero() {
 
         {/* Large decorative logo watermark */}
         <div className="absolute -bottom-16 -right-16 w-[580px] h-[580px] opacity-[0.05] select-none pointer-events-none">
-          <Image src="/logo-oficial.png" alt="" fill className="object-contain" unoptimized />
+          <Image src="/imagenOficial.png" alt="" fill className="object-contain" unoptimized />
         </div>
       </div>
 

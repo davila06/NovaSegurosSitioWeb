@@ -449,12 +449,12 @@ export default function ChatBot() {
           )}
           <button
             onClick={() => { setOpen(o => !o); if (!open) setHasUnread(false); }}
-            className={`relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-200 overflow-hidden ${open ? "bg-gold" : "bg-white"}`}
+            className={`relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-200 overflow-hidden ${open ? "bg-gold" : "bg-white border-2 border-gold/30"}`}
             aria-label={open ? t.closeChat : t.openChat}
           >
             {open
               ? <X size={22} className="text-navy-deep relative z-10" />
-              : <Image src="/logo-icon.svg" alt="NovaSeguros" fill className="object-contain p-2" unoptimized />}
+              : <Image src="/imagenOficial.png" alt="NovaSeguros" fill className="object-contain p-1.5" unoptimized />}
             {hasUnread && !open && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-bold">1</span>
             )}
@@ -464,30 +464,34 @@ export default function ChatBot() {
 
       {/* ── Drawer panel ── */}
       <div
-        className="fixed inset-y-0 right-0 z-50 flex flex-col w-full sm:w-[420px] bg-navy border-l border-gold/20 shadow-2xl transition-transform duration-300 ease-in-out"
+        className="fixed inset-y-0 right-0 z-50 flex flex-col w-full sm:w-[420px] bg-navy-deep border-l border-gold/15 shadow-2xl transition-transform duration-300 ease-in-out"
         style={{ transform: open ? "translateX(0)" : "translateX(100%)" }}
         aria-hidden={!open}
         role="dialog"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="bg-navy-deep border-b border-gold/10 px-5 py-3.5 flex flex-col shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="bg-white rounded-lg w-10 h-10 overflow-hidden shrink-0">
-              <Image src="/logo-oficial.png" alt="Nova" width={40} height={40} className="w-full h-full object-contain" unoptimized />
+        <div className="bg-gradient-to-b from-[#040C1A] to-navy-deep border-b border-gold/10 px-5 py-4 flex flex-col shrink-0">
+          <div className="flex items-center gap-4">
+            {/* Circular avatar with online dot */}
+            <div className="relative shrink-0">
+              <div className="w-[52px] h-[52px] rounded-full bg-white shadow-[0_0_0_2px_rgba(201,168,76,0.35)] overflow-hidden">
+                <Image src="/imagenOficial.png" alt="Nova" width={52} height={52} className="w-full h-full object-contain p-1" unoptimized />
+              </div>
+              <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-[#040C1A]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-cream text-sm font-semibold">Nova</p>
-              <p className="text-gold text-[10px] tracking-wide uppercase">
-                NovaSeguros · {t.online} · {currentTime}
+              <p className="font-display text-xl text-cream font-semibold leading-none tracking-wide">Nova</p>
+              <p className="text-silver/60 text-xs mt-1.5 leading-none">
+                NovaSeguros &middot; <span className="text-green-400 font-medium">{t.online}</span> &middot; {currentTime}
               </p>
             </div>
             <button
               onClick={() => setOpen(false)}
-              className="text-silver hover:text-cream transition-colors p-2 rounded-lg hover:bg-gold/10 shrink-0"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-silver/50 hover:text-cream hover:bg-white/[0.08] transition-all shrink-0"
               aria-label={t.closeChat}
             >
-              <X size={20} />
+              <X size={18} />
             </button>
           </div>
           {/* Quote progress bar */}
@@ -508,7 +512,7 @@ export default function ChatBot() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 bg-[#070F1F]">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -516,18 +520,18 @@ export default function ChatBot() {
             >
               {/* Bot avatar */}
               {msg.role === "bot" && (
-                <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-[11px] font-bold shrink-0 mt-1">
-                  N
+                <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0 mt-0.5">
+                  <Image src="/imagenOficial.png" alt="Nova" width={32} height={32} className="w-full h-full object-contain p-0.5" unoptimized />
                 </div>
               )}
               <div className={`flex flex-col gap-2 min-w-0 flex-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                 {/* Bubble */}
                 {msg.text && (
                   <div
-                    className={`max-w-[88%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                    className={`max-w-[88%] px-4 py-2.5 rounded-3xl text-sm leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-gold text-navy-deep rounded-tr-sm font-medium"
-                        : "bg-navy-light/40 text-cream border border-gold/10 rounded-tl-sm"
+                        ? "bg-gradient-to-br from-gold to-gold-dark text-navy-deep rounded-tr-md font-medium shadow-[0_4px_15px_rgba(201,168,76,0.25)]"
+                        : "bg-white/[0.06] text-cream border border-white/[0.08] rounded-tl-md"
                     }`}
                     {...(msg.role === "bot"
                       ? { dangerouslySetInnerHTML: { __html: renderText(msg.text) } }
@@ -589,10 +593,10 @@ export default function ChatBot() {
           {/* Typing indicator */}
           {botTyping && (
             <div className="flex gap-2.5 items-center nova-msg-in">
-              <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-[11px] font-bold shrink-0">
-                N
+              <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0">
+                <Image src="/imagenOficial.png" alt="Nova" width={32} height={32} className="w-full h-full object-contain p-0.5" unoptimized />
               </div>
-              <div className="bg-navy-light/40 border border-gold/10 rounded-2xl rounded-tl-sm px-4 py-3 flex gap-1.5">
+              <div className="bg-white/[0.06] border border-white/[0.08] rounded-3xl rounded-tl-md px-4 py-3 flex gap-1.5">
                 <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
                 <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
                 <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
@@ -601,10 +605,10 @@ export default function ChatBot() {
           )}
           {submitting && !botTyping && (
             <div className="flex gap-2.5 items-center nova-msg-in">
-              <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-[11px] font-bold shrink-0">
-                N
+              <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0">
+                <Image src="/imagenOficial.png" alt="Nova" width={32} height={32} className="w-full h-full object-contain p-0.5" unoptimized />
               </div>
-              <div className="bg-navy-light/40 border border-gold/10 rounded-2xl rounded-tl-sm px-4 py-2.5">
+              <div className="bg-white/[0.06] border border-white/[0.08] rounded-3xl rounded-tl-md px-4 py-2.5">
                 <Loader2 size={16} className="text-gold animate-spin" />
               </div>
             </div>
@@ -614,11 +618,11 @@ export default function ChatBot() {
 
         {/* Text input */}
         {showInput && (
-          <div className="border-t border-gold/10 px-4 py-4 flex gap-2 shrink-0">
+          <div className="border-t border-white/[0.07] bg-[#040C1A] px-4 py-4 flex gap-2 shrink-0">
             {canGoBack && (
               <button
                 onClick={goBack}
-                className="w-10 h-10 rounded-xl border border-gold/30 flex items-center justify-center text-gold hover:bg-gold/10 transition-colors shrink-0"
+                className="w-10 h-10 rounded-2xl border border-gold/25 flex items-center justify-center text-gold hover:bg-gold/10 transition-colors shrink-0"
                 aria-label={t.backStep}
                 title={t.backStep}
               >
@@ -632,12 +636,12 @@ export default function ChatBot() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSend()}
               placeholder={lastMsg.inputPlaceholder ?? t.placeholder}
-              className="flex-1 bg-navy-light/30 border border-gold/20 rounded-xl px-4 py-2.5 text-sm text-cream placeholder:text-silver/40 outline-none focus:border-gold/50 transition-colors"
+              className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-2.5 text-sm text-cream placeholder:text-silver/30 outline-none focus:border-gold/40 focus:bg-white/[0.08] transition-all"
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || botTyping}
-              className="w-10 h-10 rounded-xl bg-gold flex items-center justify-center disabled:opacity-40 hover:bg-gold/90 transition-colors shrink-0"
+              className="w-10 h-10 rounded-2xl bg-gold flex items-center justify-center disabled:opacity-30 hover:bg-gold-light transition-colors shrink-0 shadow-[0_4px_12px_rgba(201,168,76,0.3)]"
               aria-label={t.send}
             >
               <Send size={16} className="text-navy-deep" />

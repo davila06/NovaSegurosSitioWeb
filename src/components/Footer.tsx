@@ -18,7 +18,7 @@ export default function Footer() {
             <div className="mb-5 flex items-center gap-3">
               <div className="bg-white rounded-xl overflow-hidden shadow-md shrink-0 w-14 h-14">
                 <Image
-                  src="/logo-oficial.png"
+                  src="/imagenOficial.png"
                   alt="NovaSeguros"
                   width={56}
                   height={56}

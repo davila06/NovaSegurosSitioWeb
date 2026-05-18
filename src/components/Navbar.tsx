@@ -73,7 +73,7 @@ export default function Navbar() {
         <a href="#" className="flex items-center gap-3 group">
           <div className="bg-white rounded-xl overflow-hidden shadow-md shrink-0 w-11 h-11">
             <Image
-              src="/logo-oficial.png"
+              src="/imagenOficial.png"
               alt="NovaSeguros"
               width={44}
               height={44}
