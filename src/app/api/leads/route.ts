@@ -35,67 +35,63 @@ function mindflowHeaders(tenantId: string, token?: string, idempotencyKey?: stri
   return headers;
 }
 
-/** Splits "Ana García López" → { firstName: "Ana", lastName: "García López" } */
-function splitName(full: string): { firstName: string; lastName: string } {
-  const parts = full.trim().split(/\s+/);
-  return {
-    firstName: parts[0] ?? full,
-    lastName: parts.slice(1).join(" ") || "-",
-  };
-}
-
 async function pushToMindFlow(body: LeadPayload): Promise<void> {
   const apiUrl  = process.env.MINDFLOW_API_URL;
   const tenant  = process.env.MINDFLOW_TENANT_ID;
-  const token   = process.env.MINDFLOW_API_TOKEN; // optional in dev
+  const token   = process.env.MINDFLOW_API_TOKEN;
 
-  if (!apiUrl || !tenant) return; // not configured — skip silently
+  if (!apiUrl || !tenant) return;
 
-  const base = apiUrl.replace(/\/$/, "");
-  const source = `novaseguros-${body.source}`; // "novaseguros-form" | "novaseguros-chatbot"
-  const { firstName, lastName } = splitName(body.name);
+  const base   = apiUrl.replace(/\/$/, "");
+  const source = `novaseguros-${body.source}`;
+  // MindFlow exige solo dígitos en phone (8–15)
+  const phoneDigits = body.phone.replace(/\D/g, "");
 
-  // ① Create lead (with idempotency key to avoid duplicates on retries)
+  // ① Lead intake primero — necesitamos el leadId para el contacto
   const leadKey = randomUUID();
-  const [leadRes, contactRes] = await Promise.allSettled([
-    fetch(`${base}/api/leads/intake`, {
-      method: "POST",
-      headers: mindflowHeaders(tenant, token, leadKey),
-      body: JSON.stringify({
-        phone: body.phone,
-        ...(body.email ? { email: body.email } : {}),
-        source,
-      }),
-      signal: AbortSignal.timeout(10_000),
+  const leadRes = await fetch(`${base}/api/leads/intake`, {
+    method: "POST",
+    headers: mindflowHeaders(tenant, token, leadKey),
+    body: JSON.stringify({
+      phone: phoneDigits,
+      ...(body.email ? { email: body.email } : {}),
+      source,
     }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch((err) => { console.error("[mindflow] lead intake failed:", err); return null; });
 
-    // ② Create contact (parallel)
-    fetch(`${base}/api/contacts`, {
-      method: "POST",
-      headers: mindflowHeaders(tenant, token),
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        phone: body.phone,
-        ...(body.email ? { email: body.email } : {}),
-      }),
-      signal: AbortSignal.timeout(10_000),
+  if (!leadRes) return;
+  if (!leadRes.ok) {
+    const text = await leadRes.text().catch(() => "");
+    console.error(`[mindflow] lead intake returned ${leadRes.status}: ${text}`);
+    return;
+  }
+
+  // Extraer leadId del body de respuesta (acepta { id } o { leadId })
+  let leadId: string | undefined;
+  try {
+    const json = await leadRes.json() as Record<string, unknown>;
+    leadId = (json.id ?? json.leadId) as string | undefined;
+  } catch { /* sin body JSON — seguimos sin leadId si el servidor no lo exige */ }
+
+  // ② Crear contacto con fullName, phoneDigits y leadId
+  const contactRes = await fetch(`${base}/api/contacts`, {
+    method: "POST",
+    headers: mindflowHeaders(tenant, token),
+    body: JSON.stringify({
+      fullName: body.name.trim(),
+      phone: phoneDigits,
+      ...(body.email   ? { email:  body.email  } : {}),
+      ...(leadId       ? { leadId              } : {}),
     }),
-  ]);
+    signal: AbortSignal.timeout(10_000),
+  }).catch((err) => { console.error("[mindflow] contact create failed:", err); return null; });
 
-  if (leadRes.status === "fulfilled" && !leadRes.value.ok) {
-    const text = await leadRes.value.text().catch(() => "");
-    console.error(`[mindflow] lead intake returned ${leadRes.value.status}: ${text}`);
+  if (!contactRes) return;
+  if (!contactRes.ok && contactRes.status !== 409) {
+    const text = await contactRes.text().catch(() => "");
+    console.error(`[mindflow] contact create returned ${contactRes.status}: ${text}`);
   }
-  if (contactRes.status === "fulfilled" && !contactRes.value.ok) {
-    // 409 Conflict = contact already exists → not an error
-    if (contactRes.value.status !== 409) {
-      const text = await contactRes.value.text().catch(() => "");
-      console.error(`[mindflow] contact create returned ${contactRes.value.status}: ${text}`);
-    }
-  }
-  if (leadRes.status === "rejected")    console.error("[mindflow] lead intake failed:", leadRes.reason);
-  if (contactRes.status === "rejected") console.error("[mindflow] contact create failed:", contactRes.reason);
 }
 
 // ─── Route handler ────────────────────────────────────────────────────────────
