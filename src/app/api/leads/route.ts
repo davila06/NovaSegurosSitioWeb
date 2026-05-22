@@ -55,6 +55,7 @@ async function pushToMindFlow(body: LeadPayload): Promise<void> {
     body: JSON.stringify({
       phone: phoneDigits,
       ...(body.email ? { email: body.email } : {}),
+      ...(body.type  ? { serviceInterest: body.type } : {}),
       source,
     }),
     signal: AbortSignal.timeout(10_000),
