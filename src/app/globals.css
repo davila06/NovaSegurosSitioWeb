@@ -1,20 +1,20 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* Brand Colors */
-  --color-navy: #0B1C3A;
-  --color-navy-light: #132444;
-  --color-navy-deep: #060F20;
-  --color-gold: #C9A84C;
-  --color-gold-light: #E2C478;
-  --color-gold-dark: #A07A28;
-  --color-cream: #F9F5EE;
-  --color-silver: #8A9BB5;
-  --color-slate: #1E304F;
+  /* Brand Colors — Charcoal + Champagne premium palette */
+  --color-navy: #141414;
+  --color-navy-light: #1C1C1C;
+  --color-navy-deep: #0A0A0A;
+  --color-gold: #C8A96E;
+  --color-gold-light: #E0C98A;
+  --color-gold-dark: #A07840;
+  --color-cream: #F0EDE8;
+  --color-silver: #8A8A8A;
+  --color-slate: #252525;
 
   /* Legacy */
-  --color-background: #0B1C3A;
-  --color-foreground: #F9F5EE;
+  --color-background: #141414;
+  --color-foreground: #F0EDE8;
 
   /* Fonts */
   --font-display: var(--font-cormorant);
@@ -25,20 +25,41 @@
   color-scheme: dark;
 }
 
+/* ── Light mode overrides via data-theme attribute ── */
+[data-theme="light"] {
+  color-scheme: light;
+  --color-navy:       #F8F5F0;
+  --color-navy-light: #F0EDE7;
+  --color-navy-deep:  #EAE6DF;
+  --color-cream:      #1A1918;
+  --color-silver:     #4A4846;
+  --color-slate:      #E5E1DA;
+  --color-background: #F8F5F0;
+  --color-foreground: #1A1918;
+}
+
+[data-theme="light"] body {
+  background: #F8F5F0;
+  color: #1A1918;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track { background: #EAE6DF; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: rgba(160,120,64,0.35); }
+
 html {
   scroll-behavior: smooth;
 }
 
 body {
-  background: #0B1C3A;
-  color: #F9F5EE;
+  background: #141414;
+  color: #F0EDE8;
   font-family: var(--font-dm-sans), sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 /* Gold gradient text utility */
 .text-gold-gradient {
-  background: linear-gradient(135deg, #C9A84C 0%, #E2C478 50%, #A07A28 100%);
+  background: linear-gradient(135deg, #C8A96E 0%, #EDD898 50%, #A07840 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -53,24 +74,131 @@ body {
 
 /* Glass card */
 .glass-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(201, 168, 76, 0.2);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(200, 169, 110, 0.18);
   backdrop-filter: blur(12px);
 }
 
 /* Noise texture overlay */
 .noise::after {
   content: "";
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.055;
   pointer-events: none;
+  z-index: 9990;
+}
+
+/* ── Text selection ── */
+::selection {
+  background: rgba(200, 169, 110, 0.3);
+  color: #F0EDE8;
+}
+
+/* ── Partner marquee ── */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 38s linear infinite;
+}
+
+/* ── Custom cursor (desktop only) ── */
+@media (pointer: fine) {
+  * { cursor: none !important; }
+}
+.cursor-dot {
+  position: fixed;
+  top: 0; left: 0;
+  width: 6px; height: 6px;
+  margin: -3px 0 0 -3px;
+  background: #C8A96E;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  will-change: translate;
+  transition: opacity 0.3s, width 0.2s ease, height 0.2s ease, margin 0.2s ease, background 0.2s;
+}
+.cursor-dot[data-hovered="true"] {
+  width: 10px; height: 10px;
+  margin: -5px 0 0 -5px;
+  background: #E0C98A;
+}
+.cursor-ring {
+  position: fixed;
+  top: 0; left: 0;
+  width: 40px; height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 1.5px solid rgba(200, 169, 110, 0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99998;
+  will-change: translate;
+  transition: opacity 0.3s, width 0.3s ease, height 0.3s ease, margin 0.3s ease, border-color 0.3s;
+}
+.cursor-ring[data-hovered="true"] {
+  width: 58px; height: 58px;
+  margin: -29px 0 0 -29px;
+  border-color: rgba(200, 169, 110, 0.2);
 }
 
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
+}
+
+/* ── Animated gradient mesh (Hero background blobs) ── */
+@keyframes meshDrift {
+  0%   { transform: translate(0%,   0%)   scale(1);    }
+  33%  { transform: translate(4%,  -6%)   scale(1.06); }
+  66%  { transform: translate(-5%,  3%)   scale(0.96); }
+  100% { transform: translate(0%,   0%)   scale(1);    }
+}
+.animate-mesh {
+  animation: meshDrift 18s ease-in-out infinite;
+}
+.animate-mesh-slow {
+  animation: meshDrift 26s ease-in-out infinite reverse;
+}
+
+/* ── Reverse marquee (CertMarquee) ── */
+@keyframes marqueeRev {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.animate-marquee-rev {
+  animation: marqueeRev 38s linear infinite;
+}
+
+/* ── Reverse marquee alias for PartnerMarquee row 2 ── */
+@keyframes marquee-reverse {
+  from { transform: translateX(0); }
+  to   { transform: translateX(50%); }
+}
+
+/* ── Ripple on click ── */
+@keyframes ripple-expand {
+  to { transform: scale(1); opacity: 0; }
+}
+
+/* ── Custom thin gold scrollbar (WebKit only) ── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.35); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(200,169,110,0.65); }
+
+/* ── Accessibility: respect reduced-motion preference ── */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @keyframes float {
@@ -89,6 +217,60 @@ body {
 
 .animate-float {
   animation: float 6s ease-in-out infinite;
+}
+
+/* ── Diagonal shimmer sweep ── */
+@keyframes shimmerSweep {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.animate-shimmer {
+  background: linear-gradient(105deg, transparent 35%, rgba(200,169,110,0.18) 50%, transparent 65%);
+  background-size: 200% 100%;
+  animation: shimmerSweep 2.4s ease-in-out infinite;
+}
+
+/* ── Horizontal scroll snap: hide scrollbar ── */
+.snap-x::-webkit-scrollbar { display: none; }
+
+/* ── Announcement bar entrance ── */
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.animate-slide-down {
+  animation: slideDown 0.35s ease-out forwards;
+}
+
+/* ── Gold border glow on hover ── */
+.gold-glow-hover {
+  transition: box-shadow 0.3s ease;
+}
+.gold-glow-hover:hover {
+  box-shadow: 0 0 20px rgba(200,169,110,0.25), 0 0 40px rgba(200,169,110,0.08);
+}
+
+/* ── Slow spin for Membership animated gradient border ── */
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spinSlow 4s linear infinite;
+}
+
+/* ── Shimmer on group-hover ── */
+.shimmer-hover {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 40%, rgba(200,169,110,0.09) 50%, transparent 60%);
+  background-size: 200% 100%;
+  background-position: -150% center;
+  transition: background-position 0.75s ease;
+  pointer-events: none;
+}
+.group:hover .shimmer-hover {
+  background-position: 220% center;
 }
 
 @keyframes novaMsgIn {

@@ -1,12 +1,48 @@
 "use client";
 
 import { useLang } from "@/lib/i18n";
-import { Phone, Mail, MapPin } from "lucide-react";
+import { waLink } from "@/lib/wa";
+import { Phone, Mail, MapPin, Send, Copy, Check } from "lucide-react";
 import Image from "next/image";
+import { motion } from "framer-motion";
+import { useState } from "react";
+
+const PHONE_DISPLAY = "+506 8987-5225";
+const PHONE_VALUE   = "+50689875225";
 
 export default function Footer() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const f = t.footer;
+  const [email, setEmail]     = useState("");
+  const [nsState, setNsState] = useState<"idle" | "sent">("idle");
+  const [nsLoading, setNsLoading] = useState(false);
+  const [copied, setCopied]   = useState(false);
+
+  const handleNewsletter = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || nsLoading) return;
+    setNsLoading(true);
+    try {
+      await fetch("/api/newsletter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, lang }),
+      });
+    } catch { /* silent — still show success */ }
+    setNsLoading(false);
+    setNsState("sent");
+    setEmail("");
+  };
+
+  const copyPhone = async () => {
+    try {
+      await navigator.clipboard.writeText(PHONE_VALUE);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2200);
+    } catch {
+      /* fallback: do nothing */
+    }
+  };
 
   return (
     <footer className="bg-navy-deep border-t border-gold/10 pt-16 pb-8">
@@ -40,17 +76,55 @@ export default function Footer() {
                 { label: "Facebook", href: "#", svg: "M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" },
                 { label: "LinkedIn", href: "#", svg: "M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" },
               ].map(({ label, href, svg }) => (
-                <a
+                <motion.a
                   key={label}
                   href={href}
                   aria-label={label}
-                  className="w-9 h-9 rounded-sm border border-gold/20 flex items-center justify-center text-silver hover:text-gold hover:border-gold/40 transition-all duration-200"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={href === "#" ? (e) => e.preventDefault() : undefined}
+                  whileHover={{ y: -3, scale: 1.1 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                  className="w-9 h-9 rounded-sm border border-gold/20 flex items-center justify-center text-silver hover:text-gold hover:border-gold/40 hover:bg-gold/5 transition-colors duration-200"
                 >
                   <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
                     <path d={svg} />
                   </svg>
-                </a>
+                </motion.a>
               ))}
+            </div>
+
+            {/* Newsletter */}
+            <div className="mt-7">
+              <p className="text-cream/70 text-[11px] tracking-[0.15em] uppercase mb-3">
+                {lang === "es" ? "Novedades y consejos" : "News & tips"}
+              </p>
+              {nsState === "sent" ? (
+                <p className="text-gold text-xs">{lang === "es" ? "¡Suscrito! Gracias." : "Subscribed! Thank you."}</p>
+              ) : (
+                <form onSubmit={handleNewsletter} className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={e => setEmail(e.target.value)}
+                    placeholder={lang === "es" ? "Tu correo" : "Your email"}
+                    required
+                    className="flex-1 min-w-0 bg-navy/60 border border-gold/20 focus:border-gold/50
+                               text-cream text-xs px-3 py-2.5 rounded-sm outline-none transition-colors
+                               placeholder:text-silver/30"
+                  />
+                  <button
+                    type="submit"
+                    disabled={nsLoading}
+                    aria-label={lang === "es" ? "Suscribirse" : "Subscribe"}
+                    className="shrink-0 w-9 h-9 flex items-center justify-center
+                               bg-gold/15 hover:bg-gold/30 border border-gold/25 hover:border-gold/50
+                               rounded-sm transition-all duration-200 text-gold disabled:opacity-50"
+                  >
+                    <Send size={13} className={nsLoading ? "animate-spin" : ""} />
+                  </button>
+                </form>
+              )}
             </div>
           </div>
 
@@ -85,23 +159,37 @@ export default function Footer() {
           {/* Contact */}
           <div>
             <h4 className="text-cream text-xs tracking-[0.2em] uppercase font-medium mb-5">Contacto</h4>
+            <address className="not-italic">
             <ul className="space-y-3">
               <li className="flex items-start gap-3">
                 <Phone size={14} className="text-gold flex-shrink-0 mt-0.5" />
-                <span className="text-silver text-sm">+506 2100 0000</span>
+                <button
+                  onClick={copyPhone}
+                  title={copied ? "¡Copiado!" : "Copiar número"}
+                  className="group flex items-center gap-2 text-silver hover:text-cream text-sm transition-colors duration-200"
+                >
+                  <span>{PHONE_DISPLAY}</span>
+                  <span className={`transition-all duration-300 ${copied ? "text-gold" : "text-silver/30 group-hover:text-silver/60"}`}>
+                    {copied ? <Check size={11} /> : <Copy size={11} />}
+                  </span>
+                  {copied && (
+                    <span className="text-gold text-[10px] font-medium">¡Copiado!</span>
+                  )}
+                </button>
               </li>
               <li className="flex items-start gap-3">
                 <Mail size={14} className="text-gold flex-shrink-0 mt-0.5" />
-                <span className="text-silver text-sm">hola@novaseguros.cr</span>
+                <a href="mailto:hola@novaseguros.cr" className="text-silver hover:text-gold text-sm transition-colors duration-200">hola@novaseguros.cr</a>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin size={14} className="text-gold flex-shrink-0 mt-0.5" />
                 <span className="text-silver text-sm">San José, Costa Rica</span>
               </li>
             </ul>
+            </address>
 
             <a
-              href="https://wa.me/50689875225"
+              href={waLink(lang, "footer")}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-6 inline-flex items-center gap-2 border border-gold/30 hover:border-gold/60 text-gold text-xs font-medium px-4 py-2.5 rounded-sm transition-all duration-200 hover:bg-gold/5"

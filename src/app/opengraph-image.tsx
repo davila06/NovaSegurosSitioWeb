@@ -9,7 +9,7 @@ export default function Image() {
     (
       <div
         style={{
-          background: "linear-gradient(135deg, #0B1C3A 0%, #060F20 100%)",
+          background: "linear-gradient(135deg, #141414 0%, #0A0A0A 100%)",
           width: "100%",
           height: "100%",
           display: "flex",
@@ -49,7 +49,7 @@ export default function Image() {
         <div
           style={{
             fontSize: 30,
-            color: "#C9A84C",
+            color: "#C8A96E",
             textAlign: "center",
             marginBottom: "20px",
             letterSpacing: "0.08em",
@@ -63,7 +63,7 @@ export default function Image() {
         <div
           style={{
             fontSize: 20,
-            color: "#8A9BB5",
+            color: "#8A8A8A",
             textAlign: "center",
             maxWidth: "700px",
             lineHeight: 1.5,
@@ -79,7 +79,7 @@ export default function Image() {
             border: "1px solid rgba(201,168,76,0.3)",
             borderRadius: "4px",
             padding: "10px 28px",
-            color: "#8A9BB5",
+            color: "#8A8A8A",
             fontSize: "14px",
             letterSpacing: "0.2em",
             textTransform: "uppercase",
