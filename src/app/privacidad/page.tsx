@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import ArcoForm from "./ArcoForm";
 
 export const metadata: Metadata = {
   title: "Política de Privacidad — NovaSeguros",
@@ -39,7 +40,7 @@ const SECTIONS = [
   },
   {
     title: "8. Sus derechos (ARCOP)",
-    body: "Conforme a la Ley N.° 8968, usted tiene derecho de Acceso, Rectificación, Cancelación, Oposición y Portabilidad de sus datos. Para ejercerlos, envíe una solicitud a privacidad@novaseguros.cr indicando su nombre completo y el derecho que desea ejercer. Atenderemos su solicitud en un plazo máximo de 10 días hábiles.",
+    body: "Conforme a la Ley N.° 8968, usted tiene derecho de Acceso, Rectificación, Cancelación, Oposición y Portabilidad de sus datos. Puede ejercerlos mediante el formulario incluido al final de esta página o escribiendo a privacidad@novaseguros.cr indicando su nombre completo y el derecho que desea ejercer. Atenderemos su solicitud en un plazo máximo de 10 días hábiles.",
   },
   {
     title: "9. Seguridad",
@@ -131,6 +132,9 @@ export default function PrivacidadPage() {
             Volver al inicio →
           </Link>
         </div>
+
+        {/* ARCO self-service form */}
+        <ArcoForm />
 
         <p className="text-silver/30 text-xs text-center mt-12">
           © {new Date().getFullYear()} NovaSeguros. Todos los derechos reservados.

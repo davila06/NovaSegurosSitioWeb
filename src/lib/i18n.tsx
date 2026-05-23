@@ -175,6 +175,10 @@ const translations = {
         message: "Cuéntanos más (opcional)",
         submit: "Quiero mi diagnóstico gratis",
         privacy: "Tus datos son 100% privados. Nunca los compartimos.",
+        consentLabel: "He leído y acepto el tratamiento de mis datos conforme a la ",
+        consentLabelLink: "Política de Privacidad",
+        consentRequired: "Debes aceptar la política de privacidad para continuar.",
+        privacyNotice: "Sus datos serán utilizados exclusivamente para atender su solicitud de cotización. Responsable: NovaSeguros. Puede ejercer sus derechos de acceso, rectificación, cancelación y oposición escribiendo a privacidad@novaseguros.cr.",
       },
       features: [
         "Sin compromisos, 100% gratuito",
@@ -365,6 +369,10 @@ const translations = {
         message: "Tell us more (optional)",
         submit: "Get my free diagnostic",
         privacy: "Your data is 100% private. We never share it.",
+        consentLabel: "I have read and accept the processing of my data in accordance with the ",
+        consentLabelLink: "Privacy Policy",
+        consentRequired: "You must accept the privacy policy to continue.",
+        privacyNotice: "Your data will be used exclusively to attend your quote request. Controller: NovaSeguros. You may exercise your access, rectification, cancellation and objection rights by writing to privacidad@novaseguros.cr.",
       },
       features: [
         "No commitment, 100% free",

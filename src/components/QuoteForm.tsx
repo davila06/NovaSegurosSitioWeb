@@ -107,6 +107,8 @@ export default function QuoteForm() {
   const [submitted, setSubmitted] = useState(false);
   const [loading,   setLoading]   = useState(false);
   const [hp,        setHp]        = useState(""); // honeypot — must stay empty
+  const [consent,   setConsent]   = useState(false);
+  const [consentTouched, setConsentTouched] = useState(false);
   const [quoteStarted, setQuoteStarted] = useState(false);
 
   // ── 15-min advisor countdown (starts on success) ──
@@ -186,7 +188,7 @@ export default function QuoteForm() {
       await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ source: "form", lang, _hp: hp, ...form, ...getUTM() }),
+        body: JSON.stringify({ source: "form", lang, _hp: hp, consent: true, ...form, ...getUTM() }),
       });
     } catch {
       // show success regardless to avoid blocking UX
@@ -433,6 +435,35 @@ export default function QuoteForm() {
                             {500 - form.message.length}
                           </span>
                         </div>
+
+                        {/* Privacy notice (Ley 8968) */}
+                        <div className="mt-5 p-3.5 rounded-sm border border-gold/15 bg-navy/40">
+                          <p className="text-silver/60 text-[10px] leading-relaxed">
+                            {fields.privacyNotice}
+                          </p>
+                        </div>
+
+                        {/* Consent checkbox — required by Ley 8968 */}
+                        <div className="mt-3">
+                          <label className="flex items-start gap-3 cursor-pointer group">
+                            <input
+                              type="checkbox"
+                              checked={consent}
+                              onChange={e => { setConsent(e.target.checked); setConsentTouched(true); }}
+                              className="mt-0.5 w-4 h-4 shrink-0 accent-gold cursor-pointer"
+                              aria-required="true"
+                            />
+                            <span className="text-[11px] text-silver/70 leading-relaxed group-hover:text-silver transition-colors">
+                              {fields.consentLabel}
+                              <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="text-gold underline underline-offset-2">
+                                {fields.consentLabelLink}
+                              </a>
+                            </span>
+                          </label>
+                          {consentTouched && !consent && (
+                            <p className="text-[10px] text-red-400 mt-1 pl-7">{fields.consentRequired}</p>
+                          )}
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -464,7 +495,8 @@ export default function QuoteForm() {
                       </button>
                     ) : (
                       <button
-                        type="submit" disabled={loading}
+                        type="submit" disabled={loading || !consent}
+                        onClick={() => setConsentTouched(true)}
                         className="flex items-center gap-2 bg-gold hover:bg-gold-light text-navy-deep text-sm font-bold
                                    px-6 py-3 rounded-sm transition-all duration-300
                                    hover:shadow-[0_0_25px_rgba(201,168,76,0.4)]

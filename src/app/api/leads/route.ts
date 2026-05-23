@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
+/** Current consent-policy version — bump when Privacy Policy changes */
+const CONSENT_VERSION = "2026-05-v1";
+
 /** Prevent XSS in outgoing HTML emails by escaping all 5 special chars */
 function escapeHtml(raw: unknown): string {
   if (typeof raw !== "string") return "";
@@ -20,6 +23,7 @@ interface LeadPayload {
   type?: string;
   message?: string;
   lang?: string;
+  consent?: boolean; // explicit consent — Ley 8968
   _hp?: string; // honeypot — must be empty
   // UTM attribution
   utm_source?:   string;
@@ -163,6 +167,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Ley 8968 — explicit consent is mandatory for data treatment
+  if (body.consent !== true) {
+    return NextResponse.json(
+      { ok: false, error: "Consent is required" },
+      { status: 422 }
+    );
+  }
+
+  // Consent audit record (Ley 8968 compliance)
+  const consentRecord = {
+    consentGiven: true,
+    consentVersion: CONSENT_VERSION,
+    consentTimestamp: new Date().toISOString(),
+    consentIp: req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+              ?? req.headers.get("x-real-ip")
+              ?? "unknown",
+  };
+
   // Honeypot — bots fill this field; humans leave it empty
   if (body._hp) {
     return NextResponse.json({ ok: true }); // silent fake success
@@ -202,6 +224,7 @@ export async function POST(req: NextRequest) {
           ...body,
           timestamp: new Date().toISOString(),
           source_app: "novaseguros-web",
+          ...consentRecord,
         }),
         signal: AbortSignal.timeout(8_000),
       });
@@ -236,6 +259,7 @@ export async function POST(req: NextRequest) {
   <tr><td><b>UTM Medium:</b></td><td>${escapeHtml(body.utm_medium) || "—"}</td></tr>
   <tr><td><b>UTM Campaign:</b></td><td>${escapeHtml(body.utm_campaign) || "—"}</td></tr>
   <tr><td><b>Fecha:</b></td><td>${new Date().toLocaleString("es-CR", { timeZone: "America/Costa_Rica" })}</td></tr>
+  <tr><td><b>Consentimiento:</b></td><td>Sí — versión ${escapeHtml(consentRecord.consentVersion)} — IP ${escapeHtml(consentRecord.consentIp)}</td></tr>
 </table>`,
         }),
         signal: AbortSignal.timeout(8_000),

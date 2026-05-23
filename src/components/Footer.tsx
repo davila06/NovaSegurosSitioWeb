@@ -13,10 +13,11 @@ const PHONE_VALUE   = "+50689875225";
 export default function Footer() {
   const { t, lang } = useLang();
   const f = t.footer;
-  const [email, setEmail]     = useState("");
-  const [nsState, setNsState] = useState<"idle" | "sent">("idle");
-  const [nsLoading, setNsLoading] = useState(false);
-  const [copied, setCopied]   = useState(false);
+  const [email, setEmail]           = useState("");
+  const [nsState, setNsState]       = useState<"idle" | "sent">("idle");
+  const [nsLoading, setNsLoading]   = useState(false);
+  const [nsConsent, setNsConsent]   = useState(false);
+  const [copied, setCopied]         = useState(false);
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +27,7 @@ export default function Footer() {
       await fetch("/api/newsletter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, lang }),
+        body: JSON.stringify({ email, lang, consent: true }),
       });
     } catch { /* silent — still show success */ }
     setNsLoading(false);
@@ -102,27 +103,45 @@ export default function Footer() {
               {nsState === "sent" ? (
                 <p className="text-gold text-xs">{lang === "es" ? "¡Suscrito! Gracias." : "Subscribed! Thank you."}</p>
               ) : (
-                <form onSubmit={handleNewsletter} className="flex gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    placeholder={lang === "es" ? "Tu correo" : "Your email"}
-                    required
-                    className="flex-1 min-w-0 bg-navy/60 border border-gold/20 focus:border-gold/50
-                               text-cream text-xs px-3 py-2.5 rounded-sm outline-none transition-colors
-                               placeholder:text-silver/30"
-                  />
-                  <button
-                    type="submit"
-                    disabled={nsLoading}
-                    aria-label={lang === "es" ? "Suscribirse" : "Subscribe"}
-                    className="shrink-0 w-9 h-9 flex items-center justify-center
-                               bg-gold/15 hover:bg-gold/30 border border-gold/25 hover:border-gold/50
-                               rounded-sm transition-all duration-200 text-gold disabled:opacity-50"
-                  >
-                    <Send size={13} className={nsLoading ? "animate-spin" : ""} />
-                  </button>
+                <form onSubmit={handleNewsletter} className="space-y-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      placeholder={lang === "es" ? "Tu correo" : "Your email"}
+                      required
+                      className="flex-1 min-w-0 bg-navy/60 border border-gold/20 focus:border-gold/50
+                                 text-cream text-xs px-3 py-2.5 rounded-sm outline-none transition-colors
+                                 placeholder:text-silver/30"
+                    />
+                    <button
+                      type="submit"
+                      disabled={nsLoading || !nsConsent}
+                      aria-label={lang === "es" ? "Suscribirse" : "Subscribe"}
+                      className="shrink-0 w-9 h-9 flex items-center justify-center
+                                 bg-gold/15 hover:bg-gold/30 border border-gold/25 hover:border-gold/50
+                                 rounded-sm transition-all duration-200 text-gold disabled:opacity-50"
+                    >
+                      <Send size={13} className={nsLoading ? "animate-spin" : ""} />
+                    </button>
+                  </div>
+                  {/* Consent checkbox — Ley 8968 */}
+                  <label className="flex items-start gap-2 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={nsConsent}
+                      onChange={e => setNsConsent(e.target.checked)}
+                      className="mt-0.5 w-3.5 h-3.5 shrink-0 accent-gold"
+                      aria-required="true"
+                    />
+                    <span className="text-[10px] text-silver/50 leading-relaxed group-hover:text-silver/70 transition-colors">
+                      {lang === "es"
+                        ? <>Acepto el tratamiento de mis datos conforme a la <a href="/privacidad" className="text-gold/70 underline underline-offset-1" target="_blank" rel="noopener noreferrer">Política de Privacidad</a></>
+                        : <>I accept data processing per the <a href="/privacidad" className="text-gold/70 underline underline-offset-1" target="_blank" rel="noopener noreferrer">Privacy Policy</a></>
+                      }
+                    </span>
+                  </label>
                 </form>
               )}
             </div>
