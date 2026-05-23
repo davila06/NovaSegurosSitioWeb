@@ -4,6 +4,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { X, Send, Loader2, ArrowLeft, Star } from "lucide-react";
 import { useLang } from "@/lib/i18n";
+import { waLink } from "@/lib/wa";
+import { trackEvent } from "@/lib/analytics";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type Role = "bot" | "user";
@@ -204,6 +207,37 @@ export default function ChatBot() {
     } catch { /* ignore */ }
   }, [messages, step, leadData, starRating]);
 
+  // ── Proactive trigger — auto-open after 45 s of user inactivity ──
+  useEffect(() => {
+    const PROACTIVE_KEY = "nova_chat_proactive";
+    if (open) return;
+    if (sessionStorage.getItem(PROACTIVE_KEY)) return;
+
+    let idleTimer: ReturnType<typeof setTimeout> | null = null;
+    const IDLE_MS = 45_000;
+
+    const resetTimer = () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(() => {
+        if (!open) {
+          setOpen(true);
+          setHasUnread(true);
+          sessionStorage.setItem(PROACTIVE_KEY, "1");
+        }
+      }, IDLE_MS);
+    };
+
+    const events = ["mousemove", "keydown", "touchstart", "scroll", "click"] as const;
+    events.forEach(ev => window.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+
+    return () => {
+      if (idleTimer) clearTimeout(idleTimer);
+      events.forEach(ev => window.removeEventListener(ev, resetTimer));
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
   // ── Helpers ──
   const push = useCallback((msg: Omit<Message, "role">) => {
     setMessages(prev => [...prev, { role: "bot", ...msg }]);
@@ -301,6 +335,7 @@ export default function ChatBot() {
     } catch {
       // silently continue — don't block UX
     }
+    trackEvent("chat_lead_submitted", { lang });
 
     setSubmitting(false);
     setMessages(prev => {
@@ -322,7 +357,7 @@ export default function ChatBot() {
     if (value === "back" || value === "restart") { await showWelcome(); return; }
     if (value === "back_faq") { await showFaqMenu(); return; }
     if (value === "whatsapp") {
-      window.open("https://wa.me/50689875225", "_blank");
+      window.open(waLink(lang, "chatbot"), "_blank");
       await botSay({ text: t.whatsappSent, options: [{ label: t.backMenu, value: "back" }] });
       return;
     }
@@ -434,13 +469,40 @@ export default function ChatBot() {
         aria-hidden="true"
       />
 
-      {/* ── Floating trigger button ── */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+      {/* ── Floating trigger button + quick chips ── */}
+      <div className="fixed bottom-6 md:bottom-24 right-6 z-50 flex flex-col items-end gap-2">
+        {/* Quick-access chips (shown when closed and not dismissed) */}
         {!open && hasUnread && (
-          <div className="relative bg-navy-deep border border-gold/30 text-cream text-xs px-3 py-2 rounded-xl shadow-lg animate-fade-up max-w-[200px] text-right">
-            {t.bubble}
-            <span className="absolute -bottom-1.5 right-5 block w-3 h-3 bg-navy-deep border-r border-b border-gold/30 rotate-45" />
-          </div>
+          <>
+            <div className="flex flex-col items-end gap-1.5 mb-0.5">
+              {([
+                { label: lang === "es" ? "💬 Tengo una pregunta" : "💬 I have a question", value: "faq" },
+                { label: lang === "es" ? "📋 Cotizar ahora"      : "📋 Get a quote",        value: "quote" },
+              ] as const).map(chip => (
+                <button
+                  key={chip.value}
+                  onClick={() => {
+                    setOpen(true);
+                    setHasUnread(false);
+                    // Let welcome load then trigger option
+                    setTimeout(() => {
+                      setOpen(true);
+                    }, 100);
+                  }}
+                  className="bg-navy-deep/95 border border-gold/25 text-cream text-[11px] font-medium
+                             px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm
+                             hover:border-gold/50 hover:bg-gold/10 transition-all duration-200
+                             animate-fade-up whitespace-nowrap"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+            <div className="relative bg-navy-deep border border-gold/30 text-cream text-xs px-3 py-2 rounded-xl shadow-lg max-w-[200px] text-right">
+              {t.bubble}
+              <span className="absolute -bottom-1.5 right-5 block w-3 h-3 bg-navy-deep border-r border-b border-gold/30 rotate-45" />
+            </div>
+          </>
         )}
         <div className="relative">
           {/* Pulse ring */}
@@ -448,7 +510,7 @@ export default function ChatBot() {
             <span className="absolute inset-0 rounded-full bg-gold opacity-40 animate-ping" />
           )}
           <button
-            onClick={() => { setOpen(o => !o); if (!open) setHasUnread(false); }}
+            onClick={() => { setOpen(o => !o); if (!open) { setHasUnread(false); trackEvent("chat_opened"); } }}
             className={`relative w-14 h-14 rounded-full shadow-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all duration-200 overflow-hidden ${open ? "bg-gold" : "bg-white border-2 border-gold/30"}`}
             aria-label={open ? t.closeChat : t.openChat}
           >
@@ -471,14 +533,14 @@ export default function ChatBot() {
         aria-modal="true"
       >
         {/* Header */}
-        <div className="bg-gradient-to-b from-[#040C1A] to-navy-deep border-b border-gold/10 px-5 py-4 flex flex-col shrink-0">
+        <div className="bg-gradient-to-b from-[#0D0D0D] to-navy-deep border-b border-gold/10 px-5 py-4 flex flex-col shrink-0">
           <div className="flex items-center gap-4">
             {/* Circular avatar with online dot */}
             <div className="relative shrink-0">
               <div className="w-[52px] h-[52px] rounded-full bg-white shadow-[0_0_0_2px_rgba(201,168,76,0.35)] overflow-hidden">
                 <Image src="/imagenOficial.png" alt="Nova" width={52} height={52} className="w-full h-full object-contain p-1" unoptimized />
               </div>
-              <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-[#040C1A]" />
+              <span className="absolute bottom-0.5 right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 border-[#0D0D0D]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-display text-xl text-cream font-semibold leading-none tracking-wide">Nova</p>
@@ -512,7 +574,11 @@ export default function ChatBot() {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 bg-[#070F1F]">
+        <div
+          role="log"
+          aria-live="polite"
+          aria-label={lang === "es" ? "Mensajes del chat" : "Chat messages"}
+          className="flex-1 overflow-y-auto px-5 py-5 space-y-4 bg-[#111111]">
           {messages.map((msg, i) => (
             <div
               key={i}
@@ -590,19 +656,34 @@ export default function ChatBot() {
               </div>
             </div>
           ))}
-          {/* Typing indicator */}
-          {botTyping && (
-            <div className="flex gap-2.5 items-center nova-msg-in">
-              <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0">
-                <Image src="/imagenOficial.png" alt="Nova" width={32} height={32} className="w-full h-full object-contain p-0.5" unoptimized />
-              </div>
-              <div className="bg-white/[0.06] border border-white/[0.08] rounded-3xl rounded-tl-md px-4 py-3 flex gap-1.5">
-                <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-gold/70 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          )}
+          {/* Typing indicator — framer-motion wave */}
+          <AnimatePresence>
+            {botTyping && (
+              <motion.div
+                key="typing"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 4 }}
+                transition={{ duration: 0.2 }}
+                className="flex gap-2.5 items-center"
+              >
+                <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0">
+                  <Image src="/imagenOficial.png" alt="Nova" width={32} height={32} className="w-full h-full object-contain p-0.5" unoptimized />
+                </div>
+                <div className="bg-white/[0.06] border border-white/[0.08] rounded-3xl rounded-tl-md px-4 py-3.5 flex gap-1.5 items-center">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="block w-1.5 h-1.5 rounded-full bg-gold/70"
+                      style={{ boxShadow: "0 0 6px rgba(200,169,110,0.6)" }}
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 0.7, delay: i * 0.15, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
           {submitting && !botTyping && (
             <div className="flex gap-2.5 items-center nova-msg-in">
               <div className="w-8 h-8 rounded-full bg-white shadow-[0_0_0_1.5px_rgba(201,168,76,0.3)] overflow-hidden shrink-0">
@@ -618,7 +699,7 @@ export default function ChatBot() {
 
         {/* Text input */}
         {showInput && (
-          <div className="border-t border-white/[0.07] bg-[#040C1A] px-4 py-4 flex gap-2 shrink-0">
+          <div className="border-t border-gold/[0.07] bg-[#0D0D0D] px-4 py-4 flex gap-2 shrink-0">
             {canGoBack && (
               <button
                 onClick={goBack}
@@ -636,6 +717,7 @@ export default function ChatBot() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleSend()}
               placeholder={lastMsg.inputPlaceholder ?? t.placeholder}
+              aria-label={lastMsg.inputPlaceholder ?? t.placeholder}
               className="flex-1 bg-white/[0.05] border border-white/[0.08] rounded-2xl px-4 py-2.5 text-sm text-cream placeholder:text-silver/30 outline-none focus:border-gold/40 focus:bg-white/[0.08] transition-all"
             />
             <button

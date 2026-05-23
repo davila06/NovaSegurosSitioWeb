@@ -1,9 +1,12 @@
 "use client";
 
 import { useLang } from "@/lib/i18n";
-import { useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { useState, useRef } from "react";
+import { AnimatePresence, motion, useMotionValue, useTransform } from "framer-motion";
+import ParallaxHeading from "@/components/ParallaxHeading";
 import Reveal from "@/components/Reveal";
+import { useFocusTrap } from "@/lib/useFocusTrap";
+import { trackEvent } from "@/lib/analytics";
 import { X, Check, ArrowRight,
   Car, Heart, Shield, Home, Plane, PawPrint,
   Building2, Truck, HardHat, Scale, Lock, Monitor,
@@ -14,6 +17,35 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Building2, Truck, HardHat, Scale, Lock, Monitor,
 };
 
+// ─── 3-D tilt wrapper ────────────────────────────────────────────────────────────────
+function TiltCard({ children, className }: { children: React.ReactNode; className?: string }) {
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const rotateX = useTransform(my, [-0.5, 0.5], [ 5, -5]);
+  const rotateY = useTransform(mx, [-0.5, 0.5], [-5,  5]);
+  const glare   = useTransform(mx, [-0.5, 0.5], ["rgba(200,169,110,0)", "rgba(200,169,110,0.05)"]);
+
+  return (
+    <motion.div
+      style={{ rotateX, rotateY, transformPerspective: 900 }}
+      onMouseMove={(e) => {
+        const r = e.currentTarget.getBoundingClientRect();
+        mx.set((e.clientX - r.left) / r.width  - 0.5);
+        my.set((e.clientY - r.top)  / r.height - 0.5);
+      }}
+      onMouseLeave={() => { mx.set(0); my.set(0); }}
+      className={`h-full ${className ?? ""}`}
+    >
+      {/* Glare overlay */}
+      <motion.div
+        style={{ background: glare }}
+        className="absolute inset-0 rounded-sm pointer-events-none z-10"
+      />
+      {children}
+    </motion.div>
+  );
+}
+
 interface ServiceItem {
   icon: string;
   name: string;
@@ -21,13 +53,21 @@ interface ServiceItem {
   coverage?: readonly string[];
 }
 
+type TabKey = "all" | "personal" | "business";
+
 export default function Services() {
   const { t, lang } = useLang();
   const s = t.services;
-  const [tab, setTab] = useState<"personal" | "business">("personal");
+  const [tab, setTab] = useState<TabKey>("personal");
   const [modal, setModal] = useState<ServiceItem | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  useFocusTrap(modalRef, !!modal);
 
-  const activeItems = tab === "personal" ? s.personal.items : s.business.items;
+  const allItems = [...s.personal.items, ...s.business.items];
+  const activeItems =
+    tab === "all"      ? allItems :
+    tab === "personal" ? s.personal.items :
+    s.business.items;
 
   return (
     <section id="services" className="py-28 lg:py-36 bg-navy relative overflow-hidden">
@@ -43,26 +83,34 @@ export default function Services() {
             <div className="w-8 h-px bg-gold" />
             <span className="text-gold text-xs tracking-[0.25em] uppercase font-medium">{s.eyebrow}</span>
           </div>
-          <h2 className="font-display text-5xl lg:text-6xl font-light text-cream leading-tight whitespace-pre-line">
-            {s.headline.split("\n")[0]}
-            <br />
-            <span className="text-gold-gradient font-semibold">{s.headline.split("\n")[1]}</span>
-          </h2>
+          <ParallaxHeading>
+            <h2 className="font-display text-5xl lg:text-6xl font-light text-cream leading-tight whitespace-pre-line">
+              {s.headline.split("\n")[0]}
+              <br />
+              <span className="text-gold-gradient font-semibold">{s.headline.split("\n")[1]}</span>
+            </h2>
+          </ParallaxHeading>
         </Reveal>
 
         {/* Tabs */}
         <div className="flex gap-1 mb-12 bg-navy-deep/60 border border-gold/10 rounded-sm p-1 w-fit">
-          {(["personal", "business"] as const).map((tabKey) => (
+          {([["all", lang === "es" ? "Todos" : "All"], ["personal", s.personal.tag], ["business", s.business.tag]] as const).map(([tabKey, label]) => (
             <button
               key={tabKey}
-              onClick={() => setTab(tabKey)}
-              className={`px-6 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 rounded-sm ${
+              onClick={() => { setTab(tabKey as TabKey); trackEvent("services_tab", { tab: tabKey }); }}
+              className={`relative px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 rounded-sm ${
                 tab === tabKey
                   ? "bg-gold text-navy-deep shadow-[0_0_15px_rgba(201,168,76,0.3)]"
                   : "text-silver hover:text-cream"
               }`}
             >
-              {tabKey === "personal" ? s.personal.tag : s.business.tag}
+              {label}
+              {tabKey === "all" && (
+                <span className={`ml-1.5 text-[9px] font-bold px-1.5 py-0.5 rounded-full
+                                  ${tab === "all" ? "bg-navy-deep/30 text-navy-deep" : "bg-gold/15 text-gold/70"}`}>
+                  {allItems.length}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -81,13 +129,20 @@ export default function Services() {
               const IconComp = ICON_MAP[item.icon] ?? Shield;
               return (
                 <Reveal key={item.name} delay={i * 60} direction="up">
+                  <TiltCard>
                   <div
-                    className="glass-card rounded-sm p-7 group hover:border-gold/40 transition-all duration-300 hover:bg-white/[0.06] cursor-pointer h-full flex flex-col"
+                    className="glass-card rounded-sm p-7 group hover:border-gold/40 transition-all duration-300 hover:bg-white/[0.06] cursor-pointer h-full flex flex-col relative overflow-hidden"
                     onClick={() => setModal(item)}
                   >
-                    <div className="w-12 h-12 rounded-sm bg-gold/10 border border-gold/20 flex items-center justify-center mb-5 group-hover:bg-gold/20 transition-colors duration-300">
+                    {/* Shimmer sweep on hover */}
+                    <div className="shimmer-hover rounded-sm" aria-hidden="true" />
+                    <motion.div
+                      className="w-12 h-12 rounded-sm bg-gold/10 border border-gold/20 flex items-center justify-center mb-5 group-hover:bg-gold/20 transition-colors duration-300"
+                      whileHover={{ rotate: 10, scale: 1.15 }}
+                      transition={{ type: "spring", stiffness: 320, damping: 14 }}
+                    >
                       <IconComp size={22} className="text-gold" />
-                    </div>
+                    </motion.div>
                     <h3 className="font-display text-2xl font-semibold text-cream mb-2">{item.name}</h3>
                     <p className="text-silver text-sm leading-relaxed flex-1">{item.desc}</p>
                     <div className="mt-5 flex items-center gap-2 text-gold text-xs font-medium tracking-wide group-hover:gap-3 transition-all duration-300">
@@ -95,6 +150,7 @@ export default function Services() {
                       <ArrowRight size={12} />
                     </div>
                   </div>
+                  </TiltCard>
                 </Reveal>
               );
             })}
@@ -119,10 +175,15 @@ export default function Services() {
           onClick={() => setModal(null)}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-navy-deep/80 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/75 backdrop-blur-xl" />
+          {/* Grain on backdrop */}
+          <div className="absolute inset-0 opacity-[0.06] pointer-events-none"
+            style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" }}
+          />
 
           {/* Panel */}
           <div
+            ref={modalRef}
             className="relative z-10 w-full max-w-md bg-gradient-to-br from-slate to-navy-deep
                         border border-gold/25 rounded-2xl overflow-hidden
                         shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
@@ -182,6 +243,8 @@ export default function Services() {
           </div>
         </div>
       )}
+      {/* Section-to-section fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-b from-transparent to-[#0A0A0A] pointer-events-none z-10" />
     </section>
   );
 }

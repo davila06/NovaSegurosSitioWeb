@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react";
 import { useLang } from "@/lib/i18n";
 import { Menu, X, Phone } from "lucide-react";
+import { waLink } from "@/lib/wa";
 import Image from "next/image";
+import AnnouncementBar from "@/components/AnnouncementBar";
 
 export default function Navbar() {
   const { t, toggle, lang } = useLang();
@@ -56,10 +58,11 @@ export default function Navbar() {
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         scrolled
-          ? "bg-navy/95 backdrop-blur-md border-b border-gold/10 shadow-[0_4px_30px_rgba(0,0,0,0.4)]"
+          ? "bg-navy-deep/90 backdrop-blur-xl border-b border-gold/12 shadow-[0_8px_40px_rgba(0,0,0,0.55),0_1px_0_rgba(200,169,110,0.08)]"
           : "bg-transparent"
       }`}
     >
+      <AnnouncementBar />
       {/* Scroll progress bar */}
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-transparent overflow-hidden">
         <div
@@ -68,10 +71,10 @@ export default function Navbar() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-10 h-20 flex items-center justify-between">
+      <div className={`max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between transition-all duration-500 ${scrolled ? "h-14" : "h-20"}`}>
         {/* Logo */}
         <a href="#" className="flex items-center gap-3 group">
-          <div className="bg-white rounded-xl overflow-hidden shadow-md shrink-0 w-11 h-11">
+          <div className={`bg-white rounded-xl overflow-hidden shadow-md shrink-0 transition-all duration-500 ${scrolled ? "w-8 h-8" : "w-11 h-11"}`}>
             <Image
               src="/imagenOficial.png"
               alt="NovaSeguros"
@@ -102,8 +105,8 @@ export default function Navbar() {
             >
               {link.label}
               <span
-                className={`absolute -bottom-1 left-0 h-px bg-gold transition-all duration-300 ${
-                  isActive(link.href) ? "w-full" : "w-0 group-hover:w-full"
+                className={`absolute -bottom-1 h-px bg-gold transition-all duration-500 ease-out ${
+                  isActive(link.href) ? "left-0 right-0" : "left-1/2 right-1/2 group-hover:left-0 group-hover:right-0"
                 }`}
               />
             </a>
@@ -114,12 +117,23 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-4">
           <button
             onClick={toggle}
-            className="text-silver hover:text-gold text-xs tracking-[0.15em] uppercase transition-colors duration-200 px-2 py-1 border border-silver/20 hover:border-gold/40 rounded"
+            title={lang === "es" ? "Switch to English" : "Cambiar a Español"}
+            className="flex items-center gap-1.5 text-silver hover:text-gold text-xs tracking-[0.12em] uppercase transition-colors duration-200 px-2.5 py-1 border border-silver/20 hover:border-gold/40 rounded"
           >
-            {lang === "es" ? "EN" : "ES"}
+            <span>{lang === "es" ? "🇺🇸" : "🇨🇷"}</span>
+            <span>{lang === "es" ? "EN" : "ES"}</span>
+          </button>
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", ctrlKey: true }))}
+            title="Ctrl+K — navegación rápida"
+            className="hidden lg:flex items-center gap-1 text-silver/35 hover:text-silver text-[10px] border border-silver/10 hover:border-silver/25 px-2 py-1 rounded transition-all duration-200"
+          >
+            <kbd className="font-mono">⌃K</kbd>
           </button>
           <a
-            href="#quote"
+            href={waLink(lang, "float")}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 bg-gold hover:bg-gold-light text-navy-deep text-sm font-semibold px-5 py-2.5 rounded-sm transition-all duration-300 hover:shadow-[0_0_20px_rgba(201,168,76,0.4)]"
           >
             <Phone size={14} />
@@ -154,11 +168,14 @@ export default function Navbar() {
             </a>
           ))}
           <div className="flex items-center gap-4 pt-2 border-t border-gold/10">
-            <button onClick={toggle} className="text-silver text-sm border border-silver/20 px-3 py-1.5 rounded">
-              {lang === "es" ? "EN" : "ES"}
+            <button onClick={toggle} className="flex items-center gap-1.5 text-silver text-sm border border-silver/20 px-3 py-1.5 rounded">
+              <span>{lang === "es" ? "🇺🇸" : "🇨🇷"}</span>
+              <span>{lang === "es" ? "EN" : "ES"}</span>
             </button>
             <a
-              href="#quote"
+              href={waLink(lang, "float")}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setOpen(false)}
               className="flex-1 text-center bg-gold text-navy-deep font-semibold py-2.5 rounded-sm text-sm"
             >

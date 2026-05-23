@@ -20,6 +20,43 @@ interface LeadPayload {
   type?: string;
   message?: string;
   lang?: string;
+  _hp?: string; // honeypot — must be empty
+  // UTM attribution
+  utm_source?:   string;
+  utm_medium?:   string;
+  utm_campaign?: string;
+  utm_content?:  string;
+  utm_term?:     string;
+}
+
+// ─── In-memory rate limiter (5 req / IP / 60 s) ──────────────────────────────
+const RL_MAP = new Map<string, { count: number; resetAt: number }>();
+const RL_LIMIT  = 5;
+const RL_WINDOW = 60_000; // ms
+
+/** Remove stale entries to prevent unbounded Map growth */
+function pruneRateLimit(): void {
+  const now = Date.now();
+  for (const [ip, entry] of RL_MAP) {
+    if (now > entry.resetAt) RL_MAP.delete(ip);
+  }
+}
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetAt: number } {
+  const now   = Date.now();
+  // Prune stale entries every call (cheap O(n) but Map stays small)
+  if (RL_MAP.size > 500) pruneRateLimit();
+  const entry = RL_MAP.get(ip);
+  if (!entry || now > entry.resetAt) {
+    const resetAt = now + RL_WINDOW;
+    RL_MAP.set(ip, { count: 1, resetAt });
+    return { allowed: true, remaining: RL_LIMIT - 1, resetAt };
+  }
+  if (entry.count >= RL_LIMIT) {
+    return { allowed: false, remaining: 0, resetAt: entry.resetAt };
+  }
+  entry.count++;
+  return { allowed: true, remaining: RL_LIMIT - entry.count, resetAt: entry.resetAt };
 }
 
 // ─── MindFlow helpers ─────────────────────────────────────────────────────────
@@ -98,6 +135,19 @@ async function pushToMindFlow(body: LeadPayload): Promise<void> {
 // ─── Route handler ────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  // CSRF: reject requests from non-site origins (browser cross-site POSTs)
+  const origin  = req.headers.get("origin")  ?? "";
+  const referer = req.headers.get("referer") ?? "";
+  const allowed = process.env.NEXT_PUBLIC_SITE_URL ?? "https://novaseguros.cr";
+  const isValidOrigin =
+    origin.startsWith(allowed) ||
+    referer.startsWith(allowed) ||
+    origin === "" || // server-side / curl without Origin
+    process.env.NODE_ENV !== "production";
+  if (!isValidOrigin) {
+    return NextResponse.json({ ok: false, error: "Forbidden" }, { status: 403 });
+  }
+
   let body: LeadPayload;
   try {
     body = await req.json();
@@ -110,6 +160,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "name and phone are required" },
       { status: 422 }
+    );
+  }
+
+  // Honeypot — bots fill this field; humans leave it empty
+  if (body._hp) {
+    return NextResponse.json({ ok: true }); // silent fake success
+  }
+
+  // Rate limiting
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+           ?? req.headers.get("x-real-ip")
+           ?? "unknown";
+  const rl = checkRateLimit(ip);
+  const rlHeaders = {
+    "X-RateLimit-Limit":     String(RL_LIMIT),
+    "X-RateLimit-Remaining": String(rl.remaining),
+    "X-RateLimit-Reset":     String(Math.ceil(rl.resetAt / 1000)),
+  };
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests" },
+      { status: 429, headers: { ...rlHeaders, "Retry-After": "60" } }
     );
   }
 
@@ -160,6 +232,9 @@ export async function POST(req: NextRequest) {
   <tr><td><b>Tipo de seguro:</b></td><td>${escapeHtml(body.type) || "—"}</td></tr>
   <tr><td><b>Mensaje:</b></td><td>${escapeHtml(body.message) || "—"}</td></tr>
   <tr><td><b>Idioma:</b></td><td>${escapeHtml(body.lang) || "es"}</td></tr>
+  <tr><td><b>UTM Source:</b></td><td>${escapeHtml(body.utm_source) || "—"}</td></tr>
+  <tr><td><b>UTM Medium:</b></td><td>${escapeHtml(body.utm_medium) || "—"}</td></tr>
+  <tr><td><b>UTM Campaign:</b></td><td>${escapeHtml(body.utm_campaign) || "—"}</td></tr>
   <tr><td><b>Fecha:</b></td><td>${new Date().toLocaleString("es-CR", { timeZone: "America/Costa_Rica" })}</td></tr>
 </table>`,
         }),
@@ -167,7 +242,42 @@ export async function POST(req: NextRequest) {
       });
     })(),
 
+    // ── WhatsApp advisor notification via Twilio ────────────────────────────────────────────
+    (async () => {
+      const sid  = process.env.TWILIO_ACCOUNT_SID;
+      const auth = process.env.TWILIO_AUTH_TOKEN;
+      const from = process.env.TWILIO_WA_FROM; // e.g. whatsapp:+14155238886
+      const to   = process.env.TWILIO_WA_TO;   // e.g. whatsapp:+50689875225
+      if (!sid || !auth || !from || !to) return;
+
+      const text = [
+        `📋 *Nuevo lead NovaSeguros*`,
+        `Nombre: ${body.name}`,
+        `Teléfono: ${body.phone}`,
+        `Email: ${body.email || "—"}`,
+        `Seguro: ${body.type || "—"}`,
+        `Fuente: ${body.source}`,
+        `Mensaje: ${body.message || "—"}`,
+        ...(body.utm_source ? [`UTM: ${body.utm_source}/${body.utm_medium || "?"}/${body.utm_campaign || "?"}`] : []),
+      ].join("\n");
+
+      const params = new URLSearchParams({ From: from, To: to, Body: text });
+      await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${Buffer.from(`${sid}:${auth}`).toString("base64")}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: params.toString(),
+          signal: AbortSignal.timeout(8_000),
+        }
+      ).catch(err => console.error("[twilio] WA notification failed:", err));
+    })(),
+
   ]);
 
   return NextResponse.json({ ok: true });
 }
+
