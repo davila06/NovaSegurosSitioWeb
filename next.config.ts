@@ -54,6 +54,8 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Silence the Turbopack + webpack warning from next-pwa
   turbopack: {},
+  // Required for Docker / Azure Container Apps deployment
+  output: "standalone",
   compress: true,
   poweredByHeader: false,
   images: {
